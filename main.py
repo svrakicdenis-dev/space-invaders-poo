@@ -1,7 +1,7 @@
 import pygame, sys, random
 
 pygame.init() # Initialize Pygame
-icon = pygame.image.load("sprites/enemy0.png")
+icon = pygame.image.load("sprites/invader1_1.png")
 pygame.display.set_icon(icon)
 """
 
@@ -11,13 +11,12 @@ Made By : Thomas Sa. & Denis Sv.
 """
 
 
-
-# Variables
+# ----- Variables -----
 
 # Set up the display
 screen_width = 750
 screen_height = 700
-screen_offset = 50
+screen_offset = 50 # Ensure the game doesn't brutally ends on both sides of the screen + allows for the construction of the UI
 
 # Define colors
 gray = (29, 29, 29)
@@ -25,18 +24,33 @@ white = (255, 255, 255)
 red = (255, 0, 0)
 
 # Define font and texts
+font = pygame.font.Font("font/PressStart2P.ttf", 20)
 
-font = pygame.font.Font("Font/PressStart2P.ttf", 20)
 game_over_txt = font.render("GAME OVER", False, red)
 score_txt = font.render("SCORE", False, white)
 highscore_txt = font.render("HI-SCORE", False, white)
 
 # Define sprites
 spaceship_image = pygame.image.load("sprites/spaceship.png")  # Load spaceship image
-# spaceship_image = pygame.transform.scale(spaceship_image, (52, 38))  # Resize spaceship image
-
 laser_image = pygame.image.load("sprites/laser.png")  # Load laser image
-# laser_image = pygame.transform.scale(laser_image, (4, 18))  # Resize laser image
+
+
+
+
+obstacle_grid = [ # Initialize the obstacle grid
+    [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+    [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1],
+    [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],
+    [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1]]
 
 
 screen = pygame.display.set_mode((screen_width + screen_offset, screen_height + screen_offset*2)) # Display window
@@ -45,17 +59,19 @@ pygame.display.set_caption("Space Invaders : Python Edition") # Set window title
 can_shoot = pygame.USEREVENT + 1 # Define a custom event for shooting
 can_shoot_timer = 300 # Set the timer interval for shooting in milliseconds
 
-mystery_enemy_spawn = pygame.USEREVENT # Set the timer interval for spawning mystery enemies in milliseconds
-mystery_enemy_timer = random.randint(4000, 8000) # Set the timer interval for spawning mystery enemies in milliseconds
+mystery_invader_spawn = pygame.USEREVENT # Set the timer interval for spawning mystery enemies in milliseconds
+mystery_invader_interval = random.randint(10000, 20000) # Set the timer interval for spawning mystery enemies in milliseconds
 
 pygame.time.set_timer(can_shoot, can_shoot_timer) # Set the timer for shooting
-pygame.time.set_timer(mystery_enemy_spawn, mystery_enemy_timer) # Set the timer for spawning mystery enemies
+pygame.time.set_timer(mystery_invader_spawn, mystery_invader_interval) # Set the timer for spawning mystery enemies
+
+
 
 
 clock = pygame.time.Clock() # Create a clock object to control the frame rate
 
 
-# Spaceship class
+# ----- Spaceship class -----
 class Spaceship(pygame.sprite.Sprite):
     def __init__(self, screen_width, screen_height, screen_offset):
         super().__init__()
@@ -97,7 +113,7 @@ class Spaceship(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=((screen_width + self.offset) // 2, screen_height - 50))
         self.lasers_group.empty()
 
-# Laser class
+# ----- Laser class -----
 class Laser(pygame.sprite.Sprite):
     def __init__(self, position, speed, screen_offset):
         super().__init__()
@@ -111,7 +127,8 @@ class Laser(pygame.sprite.Sprite):
         if self.rect.bottom < self.offset:  # Remove the laser if it goes off-screen
             self.kill()
 
-# Obstacle class
+# ----- Block class -----
+# Contains each block of the obstacle
 class Block(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
@@ -119,22 +136,7 @@ class Block(pygame.sprite.Sprite):
         self.image.fill((255, 255, 255)) 
         self.rect = self.image.get_rect(topleft = (x, y))
 
-# Initialize the obstacle grid
-obstacle_grid = [
-    [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
-    [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
-    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    [1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1],
-    [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],
-    [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1]]
-
+# ----- Obstacle class -----
 class Obstacle:
     def __init__(self, x, y):
         self.blocks_group = pygame.sprite.Group()  # Create a sprite group for the blocks
@@ -144,18 +146,18 @@ class Obstacle:
                     block = Block(col * 3 + x, row * 3 + y)  # Create an instance of the Block class
                     self.blocks_group.add(block)  # Add the block to the group
 
-class enemy(pygame.sprite.Sprite):
+# ----- Invader Class -----
+class invader(pygame.sprite.Sprite):
     def __init__(self, type, x, y):
         super().__init__()
         self.type = type
         self.frames = [
-            pygame.image.load(f"sprites/enemy{type}.png"),
-            pygame.image.load(f"sprites/enemy{type}_1.png")
+            pygame.image.load(f"sprites/invader{type}.png"),
+            pygame.image.load(f"sprites/invader{type}_1.png")
         ]
         path = f"sprites/enemy{type}.png"  # Construct the path to the enemy image based on its type
         self.image = self.frames[0]  # Load the enemy image
         self.rect = self.image.get_rect(topleft=(x, y))  # Get the rectangle of the image
-        # self.image = pygame.transform.scale(self.image, (38, 35))  # Scale the image
 
     def update(self, direction):
         self.rect.x += direction  # Move the enemy in the specified direction
@@ -164,7 +166,8 @@ class enemy(pygame.sprite.Sprite):
             return True  # Return True if the enemy has reached the edge
         return False  # Return False if the enemy has not reached the edge
 
-class mystery_enemy(pygame.sprite.Sprite):
+# ----- Mystery Invader Class -----
+class mystery_invader(pygame.sprite.Sprite):
     def __init__(self, screen_width, screen_offset):
         super().__init__()
         self.screen_width = screen_width
@@ -185,6 +188,7 @@ class mystery_enemy(pygame.sprite.Sprite):
         elif self.rect.right < self.offset//2:  # Check if the mystery enemy has moved off-screen
             self.kill()  # Remove the mystery enemy from all groups
 
+# ----- Game Class -----
 class Game:
     def __init__(self, screen_width, screen_height, screen_offset):
         self.screen_width = screen_width
@@ -195,11 +199,11 @@ class Game:
         self.obstacles = []  # List to hold the obstacles
         self.create_obstacles()  # Create the obstacles
         self.obstacles = self.create_obstacles()  # Store the created obstacles in the list
-        self.ennemies_group = pygame.sprite.Group()  # Create a sprite group for the enemies
-        self.create_ennemies()  # Create the enemies
-        self.ennemies_direction = 1  # Set the initial direction of the enemies
-        self.ennemies_lasers_group = pygame.sprite.Group()  # Create a sprite group for the enemies' lasers
-        self.mystery_enemies_group = pygame.sprite.GroupSingle()  # Create a sprite group for the mystery enemies
+        self.invaders_group = pygame.sprite.Group()  # Create a sprite group for the enemies
+        self.spawn_invaders()  # Create the enemies
+        self.invaders_direction = 1  # Set the initial direction of the enemies
+        self.invaders_lasers_group = pygame.sprite.Group()  # Create a sprite group for the enemies' lasers
+        self.mystery_invaders_group = pygame.sprite.GroupSingle()  # Create a sprite group for the mystery enemies
         self.lives = 3  # Set the initial number of lives for the player
         self.game_is_running = True  # Flag to control the game loop
         self.score = 0
@@ -230,41 +234,41 @@ class Game:
         for obstacle in self.obstacles:
             obstacle.blocks_group.draw(screen)  # Draw each block in the obstacle group
 
-    def create_ennemies(self):
+    def spawn_invaders(self):
         for row in range(5):  # Create 5 rows of enemies
             for col in range(10):  # Create 10 columns of enemies
                 type = (row % 3)  # Determine the type of enemy based on the row
                 x = col * 60 + 100  # Calculate the x position of the enemy
                 y = row * 50 + 150  # Calculate the y position of the enemy
-                inst_enemy = enemy(type, x + screen_offset//2, y)  # Create an instance of the enemy class
-                self.ennemies_group.add(inst_enemy)  # Add the enemy to the enemies group
+                inst_enemy = invader(type, x + screen_offset//2, y)  # Create an instance of the enemy class
+                self.invaders_group.add(inst_enemy)  # Add the enemy to the enemies group
 
-    def move_ennemies(self):
-        self.ennemies_group.update(self.ennemies_direction)  # Update the position of the enemies based on the current direction
+    def move_invaders(self):
+        self.invaders_group.update(self.invaders_direction)  # Update the position of the enemies based on the current direction
 
-        ennemies_reached_edge = any(enemy.rect.right >= self.screen_width + screen_offset // 2 or enemy.rect.left <= self.offset // 2 for enemy in self.ennemies_group)  # Check if any enemy has reached the edge of the screen
-        if ennemies_reached_edge:  # If any enemy has reached the edge
-            self.ennemies_direction *= -1  # Reverse the direction of the enemies
-            for enemy in self.ennemies_group:  # Move all enemies down by 10 pixels
+        has_invader_reach_edge = any(enemy.rect.right >= self.screen_width + screen_offset // 2 or enemy.rect.left <= self.offset // 2 for enemy in self.invaders_group)  # Check if any enemy has reached the edge of the screen
+        if has_invader_reach_edge:  # If any enemy has reached the edge
+            self.invaders_direction *= -1  # Reverse the direction of the enemies
+            for enemy in self.invaders_group:  # Move all enemies down by 10 pixels
                 enemy.rect.y += 10
 
-    def fire_ennemies_lasers(self):
-        if len(self.ennemies_group) > 0:  # Check if there are any enemies left
-            random_enemy = random.choice(self.ennemies_group.sprites())  # Choose a random enemy from the group
+    def fire_invaders_lasers(self):
+        if len(self.invaders_group) > 0:  # Check if there are any enemies left
+            random_enemy = random.choice(self.invaders_group.sprites())  # Choose a random enemy from the group
             laser_sprite = Laser(position=(random_enemy.rect.centerx, random_enemy.rect.bottom), speed=4, screen_offset=self.offset)  # Create a laser at the enemy's position
-            self.ennemies_lasers_group.add(laser_sprite)  # Add the laser to the enemies' lasers group
+            self.invaders_lasers_group.add(laser_sprite)  # Add the laser to the enemies' lasers group
 
-    def spawn_mystery_enemy(self):
-        if len(self.mystery_enemies_group) == 0:  # Check if there are no mystery enemies on the screen
-            mystery_enemy_sprite = mystery_enemy(self.screen_width, self.offset)  # Create a new mystery enemy
-            self.mystery_enemies_group.add(mystery_enemy_sprite)  # Add the mystery enemy to the group
+    def spawn_mystery_invader(self):
+        if len(self.mystery_invaders_group) == 0:  # Check if there are no mystery enemies on the screen
+            mystery_enemy_sprite = mystery_invader(self.screen_width, self.offset)  # Create a new mystery enemy
+            self.mystery_invaders_group.add(mystery_enemy_sprite)  # Add the mystery enemy to the group
             self.ufo_highpitch.play()
             self.ufo_lowpitch.play()
 
     def check_for_collisions(self):
         # Check for collisions between spaceship lasers and enemies
         for laser in self.spaceship_group.sprite.lasers_group:
-            enemy_hit = pygame.sprite.spritecollideany(laser, self.ennemies_group)  # Check if the laser hits any enemy
+            enemy_hit = pygame.sprite.spritecollideany(laser, self.invaders_group)  # Check if the laser hits any enemy
             if enemy_hit:
                 self.invaderkilled_sound.play()
                 self.score += (enemy_hit.type+1) * 100
@@ -274,12 +278,12 @@ class Game:
 
         # Check for collisions between spaceship lasers and mystery enemies
         for laser in self.spaceship_group.sprite.lasers_group:
-            mystery_enemy_hit = pygame.sprite.spritecollideany(laser, self.mystery_enemies_group)  # Check if the laser hits any mystery enemy
-            if mystery_enemy_hit:
+            mystery_invader_hit = pygame.sprite.spritecollideany(laser, self.mystery_invaders_group)  # Check if the laser hits any mystery enemy
+            if mystery_invader_hit:
                 self.invaderkilled_sound.play()
                 self.score += 500
                 laser.kill()  # Remove the laser
-                mystery_enemy_hit.kill()  # Remove the mystery enemy
+                mystery_invader_hit.kill()  # Remove the mystery enemy
                 self.check_for_highscore()
 
         for obstacle in self.obstacles:
@@ -291,12 +295,12 @@ class Game:
                         block.kill()  # Remove the block
 
                 # Check for collisions between enemies' lasers and obstacle blocks
-                for laser in self.ennemies_lasers_group:
+                for laser in self.invaders_lasers_group:
                     if pygame.sprite.collide_rect(laser, block):  # Check if the laser collides with the block
                         laser.kill()  # Remove the laser
                         block.kill()  # Remove the block
 
-        for laser in self.ennemies_lasers_group:
+        for laser in self.invaders_lasers_group:
             if pygame.sprite.collide_rect(laser, self.spaceship_group.sprite):  # Check if the laser collides with the spaceship
                 laser.kill()  # Remove the laser
                 self.lives -= 1  # Decrease the player's lives by 1
@@ -304,30 +308,30 @@ class Game:
                     self.game_over()  # Call the game over method
 
         # Check if 2 lasers collide with each others
-        for enemy_laser in self.ennemies_lasers_group:
+        for invader_laser in self.invaders_lasers_group:
             for spaceship_laser in self.spaceship_group.sprite.lasers_group:
-                if pygame.sprite.collide_rect(enemy_laser, spaceship_laser):
-                    enemy_laser.kill()
+                if pygame.sprite.collide_rect(invader_laser, spaceship_laser):
+                    invader_laser.kill() # Remove both lasers
                     spaceship_laser.kill()
 
 
-        if len(self.ennemies_group) > 0:
-            for enemy in self.ennemies_group:
+        if len(self.invaders_group) > 0:
+            for invader in self.invaders_group:
                 for obstacle in self.obstacles:
                     for block in obstacle.blocks_group:
-                        if pygame.sprite.collide_rect(enemy, block):  # Check if the enemy collides with the block
+                        if pygame.sprite.collide_rect(invader, block):  # Check if the enemy collides with the block
                             block.kill()  # Remove the block
 
-                if pygame.sprite.collide_rect(enemy, self.spaceship_group.sprite):  # Check if the enemy collides with the spaceship
+                if pygame.sprite.collide_rect(invader, self.spaceship_group.sprite):  # Check if the enemy collides with the spaceship
                     self.game_over()  # Call the game over method
 
     def check_for_next_level(self):
-        if len(self.ennemies_group) == 0: # Check if enemy are left
+        if len(self.invaders_group) == 0: # Check if enemy are left
             self.level += 1
-            self.ennemies_direction = 1
-            self.ennemies_lasers_group.empty()
+            self.invaders_direction = 1
+            self.invaders_lasers_group.empty()
             self.spaceship_group.sprite.reset()
-            self.create_ennemies()
+            self.spawn_invaders()
             self.obstacles = self.create_obstacles()
             new_timer = max(can_shoot_timer - (self.level - 1) * 30, 100)
             pygame.time.set_timer(can_shoot, new_timer)
@@ -342,14 +346,14 @@ class Game:
         self.game_is_running = True
         self.lives = 3
         self.spaceship_group.sprite.reset()
-        self.ennemies_group.empty()
-        self.ennemies_lasers_group.empty()
-        self.create_ennemies()
-        self.mystery_enemies_group.empty()
+        self.invaders_group.empty()
+        self.invaders_lasers_group.empty()
+        self.spawn_invaders()
+        self.mystery_invaders_group.empty()
         self.obstacles = self.create_obstacles()
         self.score = 0
         self.level = 1
-        self.ennemies_direction = 1
+        self.invaders_direction = 1
         pygame.time.set_timer(can_shoot, can_shoot_timer)
 
     def check_for_highscore(self):
@@ -377,11 +381,11 @@ while running:
             pygame.quit()
             sys.exit()
         if event.type == can_shoot and game.game_is_running and not game.paused:  # Check if the custom shooting event has occurred
-            game.fire_ennemies_lasers()  # Fire lasers from the enemies
-        if event.type == mystery_enemy_spawn and game.game_is_running and not game.paused:  # Check if the custom mystery enemy spawn event has occurred
-            game.spawn_mystery_enemy()  # Spawn a mystery enemy
-            mystery_enemy_timer = random.randint(4000, 8000)  # Set a new random timer for the next spawn
-            pygame.time.set_timer(mystery_enemy_spawn, mystery_enemy_timer)  # Reset the timer for spawning mystery enemies
+            game.fire_invaders_lasers()  # Fire lasers from the enemies
+        if event.type == mystery_invader_spawn and game.game_is_running and not game.paused:  # Check if the custom mystery enemy spawn event has occurred
+            game.spawn_mystery_invader()  # Spawn a mystery enemy
+            mystery_invader_interval = random.randint(10000, 20000)  # Set a new random timer for the next spawn
+            pygame.time.set_timer(mystery_invader_spawn, mystery_invader_interval)  # Reset the timer for spawning mystery enemies
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and game.game_is_running:
             game.paused = not game.paused
 
@@ -398,9 +402,9 @@ while running:
     if game.game_is_running and not game.paused:  # Check if the game is still running
         pygame.display.update()  # Update the display
         game.spaceship_group.update()  # Update the spaceship's position and lasers
-        game.move_ennemies()  # Move the enemies
-        game.ennemies_lasers_group.update()  # Update the enemies' lasers' positions
-        game.mystery_enemies_group.update()  # Update the mystery enemies' positions
+        game.move_invaders()  # Move the enemies
+        game.invaders_lasers_group.update()  # Update the enemies' lasers' positions
+        game.mystery_invaders_group.update()  # Update the mystery enemies' positions
         game.check_for_collisions()  # Check for collisions between lasers and enemies
         game.check_for_next_level()
 
@@ -434,18 +438,18 @@ while running:
     screen.blit(game_score_txt, (50, 45, 50, 50))
 
     # Formatted highscore
-    screen.blit(highscore_txt, (550, 15, 50, 50))
+    screen.blit(highscore_txt, (550, 25, 50, 50))
     formatted_highscore = str(game.highscore).zfill(5)
     game_highscore_txt = font.render(formatted_highscore, False, white)
-    screen.blit(game_highscore_txt, (610, 40, 50, 50))
+    screen.blit(game_highscore_txt, (610, 45, 50, 50))
 
     game.spaceship_group.draw(screen)  # Draw the spaceship
     game.spaceship_group.sprite.lasers_group.draw(screen)  # Draw the lasers
     game.draw_obstacles()  # Draw the obstacles
     for obstacles in game.obstacles:
         obstacles.blocks_group.draw(screen)  # Draw each block in the obstacle group
-    game.ennemies_group.draw(screen)  # Draw the enemies
-    game.ennemies_lasers_group.draw(screen)  # Draw the enemies' lasers
-    game.mystery_enemies_group.draw(screen)  # Draw the mystery enemies
+    game.invaders_group.draw(screen)  # Draw the enemies
+    game.invaders_lasers_group.draw(screen)  # Draw the enemies' lasers
+    game.mystery_invaders_group.draw(screen)  # Draw the mystery enemies
     pygame.display.flip()  # Update the display
     clock.tick(60)  # Limit the frame rate to 60 FPS
