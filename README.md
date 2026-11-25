@@ -26,4 +26,3 @@ python main.py
 
 - **Flèche Gauche / Flèche Droite** : Déplacer le vaisseau
 - **Espace** : Tirer
-- **Tab / C** : Changer d'arme / de projectile (à adapter selon la touche de ton code)
