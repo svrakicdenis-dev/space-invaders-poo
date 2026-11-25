@@ -1,20 +1,16 @@
 import pygame
-from config import SCREEN_HEIGHT, SCREEN_OFFSET
+from config import *
 
 
 class Laser(pygame.sprite.Sprite):
-    _cached_image = None
-
-    def __init__(self, position, speed, screen_offset=SCREEN_OFFSET):
+    def __init__(self, position, speed, screen_offset, image=laser_sprite):
         super().__init__()
-        if Laser._cached_image is None:
-            Laser._cached_image = pygame.image.load("sprites/laser.png")
         self.offset = screen_offset
-        self.image = Laser._cached_image
-        self.rect = self.image.get_rect(center=position)
-        self.speed = speed
+        self.image = image  # Use the loaded laser image
+        self.rect = self.image.get_rect(center = position)  # Get the rectangle of the image
+        self.speed = speed  # Set the speed of the laser
 
     def update(self):
-        self.rect.y += self.speed
-        if self.rect.bottom < self.offset or self.rect.top > SCREEN_HEIGHT + 30:
+        self.rect.y += self.speed  # Move the laser upward
+        if self.rect.bottom < self.offset:  # Remove the laser if it goes off-screen
             self.kill()
