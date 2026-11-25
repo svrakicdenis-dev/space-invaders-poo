@@ -26,3 +26,4 @@ python main.py
 
 - **Flèche Gauche / Flèche Droite** : Déplacer le vaisseau
 - **Espace** : Tirer
+- **Esc** : mettre en pause / quitter la partie (si game over)
