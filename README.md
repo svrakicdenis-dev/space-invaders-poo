@@ -13,6 +13,7 @@ Version orientée objet du jeu **Space Invaders** développée en Python avec la
 Ouvrez un terminal et exécutez :
 ```bash
 git clone https://github.com/svrakicdenis-dev/space-invaders-poo.git
+cd space-invaders-poo/
 ```
 
 ### Option B — Sans Git (téléchargement ZIP)
